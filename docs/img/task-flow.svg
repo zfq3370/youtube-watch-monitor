@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="640" viewBox="0 0 1180 640" role="img" aria-label="任务从创建到提醒的通用流程">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+    <style>
+      text { font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif; }
+      .title { font-size: 27px; font-weight: bold; fill: #1f2937; }
+      .sub { font-size: 16px; fill: #64748b; }
+      .step { font-size: 19px; font-weight: bold; fill: #1f2937; }
+      .body { font-size: 16px; fill: #374151; }
+      .small { font-size: 15px; fill: #4b5563; }
+      .box { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.5; }
+      .line { stroke: #64748b; stroke-width: 2; fill: none; }
+    </style>
+  </defs>
+
+  <rect width="1180" height="640" fill="#ffffff"/>
+  <text x="40" y="50" class="title">图 1　任务从创建到第一次提醒：三种类型共用同一套流程</text>
+  <text x="40" y="80" class="sub">关键点是"第一次成功读取只建立基准"，所以刚建好任务不会立刻报一堆你已经看过的内容。</text>
+
+  <g>
+    <rect x="40" y="110" width="250" height="96" rx="10" class="box"/>
+    <text x="60" y="142" class="step">① 点"添加任务"</text>
+    <text x="60" y="170" class="body">监控任务 页工具栏</text>
+    <text x="60" y="192" class="small">名称随意，认得出就行</text>
+  </g>
+  <path d="M 290 158 L 330 158" class="line" marker-end="url(#arrow)"/>
+  <g>
+    <rect x="330" y="110" width="250" height="96" rx="10" class="box"/>
+    <text x="350" y="142" class="step">② 选类型 + 粘链接</text>
+    <text x="350" y="170" class="body">保存时立刻校验并归一化</text>
+    <text x="350" y="192" class="small">不合法会指出该怎么填</text>
+  </g>
+  <path d="M 580 158 L 620 158" class="line" marker-end="url(#arrow)"/>
+  <g>
+    <rect x="620" y="110" width="250" height="96" rx="10" class="box"/>
+    <text x="640" y="142" class="step">③ 首次成功读取</text>
+    <text x="640" y="170" class="body">只记录当前状态作基准</text>
+    <text x="640" y="192" class="small">状态写"基准已建立"，不报警</text>
+  </g>
+  <path d="M 870 158 L 910 158" class="line" marker-end="url(#arrow)"/>
+  <g>
+    <rect x="910" y="110" width="230" height="96" rx="10" class="box"/>
+    <text x="930" y="142" class="step">④ 按间隔刷新</text>
+    <text x="930" y="170" class="body">60 秒 ~ 24 小时</text>
+    <text x="930" y="192" class="small">固定复用一个后台标签页</text>
+  </g>
+
+  <path d="M 1025 206 L 1025 246 L 590 246 L 590 282" class="line" marker-end="url(#arrow)"/>
+  <g>
+    <polygon points="590,286 760,346 590,406 420,346" fill="#eef2ff" stroke="#818cf8" stroke-width="1.5"/>
+    <text x="590" y="340" class="step" text-anchor="middle">和基准比对</text>
+    <text x="590" y="366" class="small" text-anchor="middle">每次读取结果只判定一次</text>
+  </g>
+
+  <path d="M 470 372 L 230 372 L 230 434" class="line" marker-end="url(#arrow)"/>
+  <path d="M 590 406 L 590 434" class="line" marker-end="url(#arrow)"/>
+  <path d="M 710 372 L 950 372 L 950 434" class="line" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="40" y="438" width="380" height="150" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+    <text x="62" y="472" class="step" fill="#166534">没变化 → 不打扰</text>
+    <text x="62" y="502" class="body">状态写"监控正常，正文未变"或</text>
+    <text x="62" y="526" class="body">"会员列表正常，未发现新视频"。</text>
+    <text x="62" y="558" class="small">不弹窗、不响、不发邮件、不写提醒记录。</text>
+  </g>
+  <g>
+    <rect x="420" y="438" width="340" height="150" rx="10" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+    <text x="442" y="472" class="step" fill="#b45309">读不到 → 保留基准</text>
+    <text x="442" y="502" class="body">断网、页面没加载出来、</text>
+    <text x="442" y="526" class="body">助手没连上，都只记"读取失败"。</text>
+    <text x="442" y="558" class="small">绝不把"没读到"当成"内容被删了"。</text>
+  </g>
+  <g>
+    <rect x="780" y="438" width="360" height="150" rx="10" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="802" y="472" class="step" fill="#b91923">有变化 → 提醒 + 更新基准</text>
+    <text x="802" y="502" class="body">按任务开关弹窗 / 播放声音 / 发邮件，</text>
+    <text x="802" y="526" class="body">同时在 提醒记录 页留痕。</text>
+    <text x="802" y="558" class="small">基准随即更新，同一条变化不会重复提醒。</text>
+  </g>
+
+  <text x="40" y="618" class="sub">想"从现在算起"、或换了监控目标：选中任务点 重新建立基准，下一次读取同样只建基准、不报警。</text>
+</svg>

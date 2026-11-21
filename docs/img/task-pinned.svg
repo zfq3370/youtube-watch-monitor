@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="850" viewBox="0 0 1180 850" role="img" aria-label="博主置顶评论任务的创建规则">
+  <defs>
+    <marker id="arrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+    <style>
+      text { font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif; }
+      .title { font-size: 27px; font-weight: bold; fill: #1f2937; }
+      .sub { font-size: 16px; fill: #64748b; }
+      .head { font-size: 21px; font-weight: bold; fill: #1f2937; }
+      .mono { font-size: 16px; font-family: "Consolas", "Microsoft YaHei UI", monospace; fill: #111827; }
+      .body { font-size: 16px; fill: #374151; }
+      .small { font-size: 15px; fill: #4b5563; }
+      .box { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.5; }
+      .line { stroke: #64748b; stroke-width: 2; fill: none; }
+    </style>
+  </defs>
+
+  <rect width="1180" height="850" fill="#ffffff"/>
+  <text x="40" y="50" class="title">图 3　博主置顶评论：盯的是"当前置顶的那一条"，不是某一条固定评论</text>
+  <text x="40" y="80" class="sub">博主改置顶内容、换成别的评论、或者取消置顶，都会被抓出来；评论下面普通回复的变化不在本类型范围内（那要用"指定评论变更"）。</text>
+
+  <g>
+    <rect x="40" y="110" width="520" height="510" rx="12" class="box"/>
+    <text x="66" y="150" class="head">① 添加任务窗口的填法</text>
+
+    <text x="66" y="188" class="body">监控类型：<tspan font-weight="bold">博主置顶评论</tspan></text>
+
+    <text x="66" y="226" class="body">链接：粘这个视频的地址，三种形式都认</text>
+    <rect x="66" y="240" width="468" height="38" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="80" y="265" class="mono">https://www.youtube.com/watch?v=TESTVIDEO01</text>
+    <rect x="66" y="284" width="468" height="38" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="80" y="309" class="mono">https://youtu.be/TESTVIDEO01　或　/shorts/TESTVIDEO01</text>
+    <path d="M 300 326 L 300 342" class="line" marker-end="url(#arrow3)"/>
+    <rect x="66" y="346" width="468" height="38" rx="6" fill="#eef2ff" stroke="#818cf8"/>
+    <text x="80" y="371" class="mono">统一存成 https://www.youtube.com/watch?v=TESTVIDEO01</text>
+    <text x="66" y="410" class="small">参数（?si=、&amp;t=）会被丢掉；填频道链接会提示"此任务需要视频链接"。</text>
+
+    <text x="66" y="446" class="body">评论作者：<tspan font-weight="bold">填 @handle 或频道链接</tspan>，只认这位作者的置顶</text>
+    <rect x="66" y="460" width="180" height="38" rx="6" fill="#eef2ff" stroke="#818cf8"/>
+    <text x="80" y="485" class="mono">@samplechannel</text>
+    <rect x="256" y="460" width="278" height="38" rx="6" fill="#eef2ff" stroke="#818cf8"/>
+    <text x="270" y="485" class="mono">youtube.com/@samplechannel</text>
+    <rect x="66" y="502" width="468" height="38" rx="6" fill="#eef2ff" stroke="#818cf8"/>
+    <text x="80" y="527" class="mono">https://www.youtube.com/channel/UC…频道ID</text>
+    <text x="66" y="562" class="body">留空＝谁置顶都算；作者不匹配的置顶评论视为"没有匹配的置顶"。</text>
+    <text x="66" y="588" class="small">三种写法等价；博主改名换了 handle 时，用频道 ID 仍能对上。</text>
+    <text x="66" y="608" class="small">刷新间隔 60 秒 ~ 24 小时，每个任务独立计时。</text>
+  </g>
+
+  <g>
+    <rect x="580" y="110" width="560" height="510" rx="12" class="box"/>
+    <text x="606" y="150" class="head">② 四种"变化"与对应提示</text>
+
+    <rect x="606" y="172" width="508" height="82" rx="8" fill="#fef2f2" stroke="#fca5a5"/>
+    <text x="622" y="200" class="body" fill="#b91923" font-weight="bold">评论正文已修改</text>
+    <text x="622" y="224" class="small">还是同一条评论（ID 相同），正文不一样了。</text>
+    <text x="622" y="244" class="small">提醒里给出"变化前 / 变化后"两段原文。</text>
+
+    <rect x="606" y="262" width="508" height="82" rx="8" fill="#fef2f2" stroke="#fca5a5"/>
+    <text x="622" y="290" class="body" fill="#b91923" font-weight="bold">置顶评论已替换</text>
+    <text x="622" y="314" class="small">置顶换成了另一条评论（ID 变了）。</text>
+    <text x="622" y="334" class="small">同样带变化前 / 变化后正文。</text>
+
+    <rect x="606" y="352" width="508" height="82" rx="8" fill="#fffbeb" stroke="#fcd34d"/>
+    <text x="622" y="380" class="body" fill="#b45309" font-weight="bold">出现目标作者的置顶评论</text>
+    <text x="622" y="404" class="small">基准里原本没有匹配的置顶，现在出现了。</text>
+    <text x="622" y="424" class="small">例如博主刚把某条评论置顶。</text>
+
+    <rect x="606" y="442" width="508" height="100" rx="8" fill="#fff7ed" stroke="#fdba74"/>
+    <text x="622" y="470" class="body" fill="#b45309" font-weight="bold">目标置顶评论已取消或移除</text>
+    <text x="622" y="494" class="small">要<tspan font-weight="bold">连续两次成功读取</tspan>都没找到，才判定为取消；</text>
+    <text x="622" y="514" class="small">中间只失败一次不算，状态会写"暂未发现目标置顶，</text>
+    <text x="622" y="534" class="small">等待另一次刷新确认"。断网不会误报"博主取消置顶"。</text>
+  </g>
+
+  <g>
+    <rect x="40" y="640" width="1100" height="190" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="66" y="678" class="head">③ 别和"指定评论变更"搞混</text>
+    <text x="66" y="712" class="body">· <tspan font-weight="bold">博主置顶评论</tspan>：盯"当前置顶"这个位置，链接只要视频地址，作者用来限定是谁的置顶。置顶换人、换条都能报。</text>
+    <text x="66" y="740" class="body">· <tspan font-weight="bold">指定评论变更</tspan>：盯某一条具体评论，链接必须带 <tspan class="mono">&amp;lc=</tspan> 评论 ID（在 YouTube 上点那条评论的发布时间就能拿到），正文一改就报，不看作者。</text>
+    <text x="66" y="768" class="body">· 两者第一次成功读取都只建立基准、不报警；<tspan font-weight="bold">评论作者</tspan>框在"指定评论变更"和"会员专属新视频"里会被自动清空。</text>
+    <text x="66" y="802" class="small">想同时盯"置顶位置"和"某条固定评论"，就建两个任务，各自有独立的后台标签页和基准，互不影响。</text>
+  </g>
+</svg>

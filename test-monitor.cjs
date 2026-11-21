@@ -193,6 +193,13 @@ async function main() {
   assert.ok(fs.existsSync(path.join(root, 'icon', 'app.ico')), 'desktop program icon resource exists');
   for (const group of [['icons', manifest.icons], ['action.default_icon', manifest.action?.default_icon]]) assert.ok(group[1] && Object.keys(group[1]).length >= 3, group[0] + ' declares several sizes');
   for (const relative of new Set([...Object.values(manifest.icons), ...Object.values(manifest.action.default_icon)])) assert.ok(fs.existsSync(iconFile(relative)), 'extension icon ' + relative + ' exists');
+  const guide = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+  const figures = [...guide.matchAll(/\]\((docs\/[^)\s]+\.svg)\)/g)].map(match => match[1]);
+  assert.ok(figures.length >= 3, 'guide embeds the task-creation figures');
+  for (const relative of new Set(figures)) {
+    const svg = fs.readFileSync(path.join(root, ...relative.split('/')), 'utf8');
+    assert.ok(svg.includes('<svg ') && svg.includes('</svg>') && svg.includes('viewBox'), 'guide figure ' + relative + ' is a sized svg');
+  }
   await testBackground(); testReaders(); for (const kind of ['normal', 'members', 'redirect', 'offline', 'retry', 'ordinary', 'slow-comments', 'background-only', 'background-delayed']) await testContent(kind);
   console.log('PASS all extension tests; synthetic tone at ' + makeAudio());
 }

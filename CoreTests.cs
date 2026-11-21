@@ -120,6 +120,9 @@ public static class CoreTests {
         var floodLog = new List<Notice>();
         for (int i = 0; i < 1100; i++) floodLog.Add(new Notice { wantsEmail = true });
         Assert(NoticeLog.Trim(floodLog) == 100 && floodLog.Count == NoticeLog.HardCap, "pending flood still hard capped");
-        File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "self-test-result.txt"), "PASS: " + count + " checks; exact comments, pinned author changes, two-scan removal, failures, deduplication, member baseline/new-prefix/backfill/public exclusion, URL validation, persistence, DPAPI, music paths, mail presets, state lookups, notice log trimming and clearing, config export/import without secrets", new UTF8Encoding(false));
+        Assert(AlertMusic.IsSystemSound("") && !AlertMusic.IsSystemSound("C:\\song.mp3"), "empty music path means system sound");
+        Assert(AlertMusic.ValidatePath("") == "", "empty music path validates as the system sound");
+        Assert(AlertMusic.RepeatIntervalMs >= 1500 && AlertMusic.RepeatIntervalMs <= 6000, "alert sound refill interval is audible without being frantic");
+        File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "self-test-result.txt"), "PASS: " + count + " checks; exact comments, pinned author changes, two-scan removal, failures, deduplication, member baseline/new-prefix/backfill/public exclusion, URL validation, persistence, DPAPI, music paths, mail presets, state lookups, notice log trimming and clearing, repeated system alert sound, config export/import without secrets", new UTF8Encoding(false));
     }
 }

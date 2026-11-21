@@ -20,6 +20,7 @@ copy /y README.md "%OUT%\" >nul
 copy /y LICENSE "%OUT%\" >nul
 copy /y VERSION "%OUT%\" >nul
 xcopy /e /i /y /q extension "%OUT%\extension" >nul
+xcopy /e /i /y /q docs "%OUT%\docs" >nul
 
 rem 用 make-zip.ps1 压缩，条目路径是正斜杠，Mac/Linux 解压也不会把 extension\ 当成文件名
 powershell -NoProfile -ExecutionPolicy Bypass -File make-zip.ps1 "%OUT%" "%OUT%.zip" >nul 2>&1

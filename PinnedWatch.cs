@@ -131,6 +131,8 @@ public class MonitorForm : Form {
     RadioButton systemSoundChoice, customMusicChoice; Button musicBrowse;
     NumericUpDown volume; CheckBox loop; NotifyIcon tray; Form alert; TextBox alertBody; Label alertTitle; int alertCount;
     readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer(); readonly System.Windows.Forms.Timer previewTimer = new System.Windows.Forms.Timer();
+    readonly System.Windows.Forms.Timer beepTimer = new System.Windows.Forms.Timer();
+    string soundPath = ""; int soundVolume = 70;
     bool exiting, mailBusy; DateTime nextMail = DateTime.MinValue, nextCheckAllowed = DateTime.MinValue;
     Button checkNow;
 
@@ -157,8 +159,9 @@ public class MonitorForm : Form {
         tray.DoubleClick += delegate { Show(); WindowState = FormWindowState.Normal; Activate(); };
         var menu = new ContextMenuStrip(); menu.Items.Add("打开面板", null, delegate { Show(); Activate(); }); menu.Items.Add("停止音乐", null, delegate { StopMusic(); }); menu.Items.Add("退出", null, delegate { exiting = true; Close(); }); tray.ContextMenuStrip = menu;
         FormClosing += delegate(object sender, FormClosingEventArgs e) { if (!exiting) { e.Cancel = true; Hide(); } };
-        FormClosed += delegate { timer.Stop(); previewTimer.Stop(); AlertMusic.Stop(); if (listener != null) listener.Close(); tray.Dispose(); if (alert != null) alert.Close(); };
+        FormClosed += delegate { timer.Stop(); previewTimer.Stop(); beepTimer.Stop(); AlertMusic.Stop(); if (listener != null) listener.Close(); tray.Dispose(); if (alert != null) alert.Close(); };
         previewTimer.Interval = 10000; previewTimer.Tick += delegate { StopMusic(); musicStatus.Text = "试听已结束（10 秒）。正式提醒会按循环设置播放，直到关闭弹窗或点“停止音乐”。"; };
+        beepTimer.Interval = AlertMusic.RepeatIntervalMs; beepTimer.Tick += delegate { KeepAlertSound(); };
         listener = new HttpListener(); listener.Prefixes.Add("http://127.0.0.1:18964/"); listener.Start(); Task.Run((Action)Listen);
         PublishTasks(); RefreshGrid(); RefreshHistory(); UpdateMailLabel();
         timer.Interval = 1000; timer.Tick += delegate { Tick(); }; timer.Start();
@@ -237,10 +240,10 @@ public class MonitorForm : Form {
         loop = new CheckBox { Text = "循环播放，直到点击“知道了”或关闭提醒弹窗", Checked = settings.loop, AutoSize = true, Margin = new Padding(4, 15, 4, 15) }; panel.Controls.Add(loop);
         var buttons = new FlowLayoutPanel { Width = 820, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true };
         buttons.Controls.Add(Button("保存音乐设置", delegate { try { settings.musicPath = customMusicChoice.Checked ? AlertMusic.ValidatePath(musicPath.Text) : ""; settings.volume = (int)volume.Value; settings.loop = loop.Checked; Store.Save("settings.json", settings); SyncMusicControls(); musicStatus.Text = customMusicChoice.Checked ? "已保存：提醒时播放这个文件。" : "已保存：提醒时播放 Windows 系统提示音。"; } catch (ArgumentException ex) { musicStatus.Text = ex.Message; } }));
-        buttons.Controls.Add(Button("试听 10 秒", delegate { try { previewTimer.Stop(); AlertMusic.Play(customMusicChoice.Checked ? AlertMusic.ValidatePath(musicPath.Text) : "", (int)volume.Value, loop.Checked); previewTimer.Start(); musicStatus.Text = "正在试听，可随时点“停止音乐”。"; } catch (Exception ex) { musicStatus.Text = "音乐未能播放：" + ex.Message; } }));
+        buttons.Controls.Add(Button("试听 10 秒", delegate { try { PlaySound(customMusicChoice.Checked ? AlertMusic.ValidatePath(musicPath.Text) : "", (int)volume.Value, loop.Checked); previewTimer.Start(); musicStatus.Text = "正在试听，可随时点“停止音乐”。"; } catch (Exception ex) { musicStatus.Text = "音乐未能播放：" + ex.Message; } }));
         buttons.Controls.Add(Button("测试弹窗与音乐", delegate { ShowAlert("测试：桌面弹窗与音乐", "这是一条测试提醒，不是实际评论或新视频变化。\r\n正式提醒会显示任务名称、变化前后正文或新视频标题。", null, true); })); panel.Controls.Add(buttons);
         musicStatus = Label("系统提示音不需要任何文件；选自己的音乐时路径只保存在本机。测试弹窗使用已保存的设置。"); panel.Controls.Add(musicStatus);
-        panel.Controls.Add(Label("每个任务可独立开启 / 关闭邮件、弹窗和音乐。建议需要循环音乐的任务同时启用弹窗。\r\n只播放本机文件或系统提示音，不上传音乐；点“知道了”、关闭弹窗或退出程序都会停止音乐。\r\nChrome 和程序必须保持运行；电脑休眠时无法检查，锁屏时弹窗要解锁后才能看见。"));
+        panel.Controls.Add(Label("每个任务可独立开启 / 关闭邮件、弹窗和音乐。建议需要循环音乐的任务同时启用弹窗。\r\n只播放本机文件或系统提示音，不上传音乐；点“知道了”、关闭弹窗或退出程序都会停止音乐。\r\n勾上“循环播放”后提醒音会一直响到弹窗关闭：系统提示音每约 3 秒补响一次，音乐文件放完或没循环成功也会接着再放。\r\nChrome 和程序必须保持运行；电脑休眠时无法检查，锁屏时弹窗要解锁后才能看见。"));
     }
     void ApplyMusicMode(bool useCustom) { musicPath.Enabled = useCustom; musicBrowse.Enabled = useCustom; }
     void SyncMusicControls() {
@@ -508,8 +511,23 @@ public class MonitorForm : Form {
         password.Clear(); UpdateMailLabel(); nextMail = DateTime.MinValue;
         return true;
     }
-    void StopMusic() { previewTimer.Stop(); AlertMusic.Stop(); }
-    void PlayMusic() { previewTimer.Stop(); try { AlertMusic.Play(settings.musicPath, settings.volume, settings.loop); } catch (Exception ex) { musicStatus.Text = "音乐未能播放：" + ex.Message; System.Media.SystemSounds.Exclamation.Play(); } }
+    void StopMusic() { previewTimer.Stop(); beepTimer.Stop(); AlertMusic.Stop(); }
+    void PlayMusic() { PlaySound(settings.musicPath, settings.volume, settings.loop); }
+    // 试听和正式提醒走同一条播放路径；勾了循环就交给定时器补播，直到关闭弹窗或点"停止音乐"。
+    void PlaySound(string path, int volume, bool repeat) {
+        previewTimer.Stop(); beepTimer.Stop();
+        soundPath = path; soundVolume = volume;
+        try { AlertMusic.Play(path, volume, repeat); }
+        catch (Exception ex) { musicStatus.Text = "音乐未能播放：" + ex.Message + "，已改用系统提示音提醒。"; soundPath = ""; System.Media.SystemSounds.Exclamation.Play(); }
+        if (repeat) beepTimer.Start();
+    }
+    // 系统提示音本身只响一下；音乐文件如果没循环成功，也在它停下后的下一秒接着放，保证提醒音一直响到人确认。
+    void KeepAlertSound() {
+        if (AlertMusic.IsSystemSound(soundPath)) { System.Media.SystemSounds.Exclamation.Play(); return; }
+        if (AlertMusic.IsPlaying()) return;
+        try { AlertMusic.Play(soundPath, soundVolume, true); }
+        catch (Exception ex) { musicStatus.Text = "音乐未能播放：" + ex.Message + "，已改用系统提示音提醒。"; soundPath = ""; System.Media.SystemSounds.Exclamation.Play(); }
+    }
     void ShowAlert(string title, string body, string url, bool music) {
         if (alert == null || alert.IsDisposed) {
             alertCount = 0; alert = new Form { Text = "YouTube 监控提醒", AutoScaleDimensions = new SizeF(96, 96), AutoScaleMode = AutoScaleMode.Dpi, ClientSize = new Size(920, 690), MinimumSize = new Size(760, 550), TopMost = true, StartPosition = FormStartPosition.CenterScreen, BackColor = Color.FromArgb(255, 248, 235), Font = new Font("Microsoft YaHei UI", 12), Icon = WindowIcon.Load(32) };

@@ -143,7 +143,7 @@ public static class Migration {
 
 public static class App {
     // 发布时三处版本号需一致：此处、VERSION 文件、extension/manifest.json（测试会检查）。
-    public const string Version = "2.2.1";
+    public const string Version = "2.2.2";
     public const string ConfigApp = "youtube-watch-monitor";
 }
 
@@ -314,6 +314,9 @@ public static class Engine {
 
 public static class AlertMusic {
     const string Alias = "qoderWatchMusic";
+    // 提醒音要一直响到弹窗关闭：系统提示音本身只响一下，音乐文件也可能没循环成功，两种都由界面定时器按这个间隔补播。
+    public const int RepeatIntervalMs = 3000;
+    public static bool IsSystemSound(string path) { return String.IsNullOrEmpty(path); }
     [DllImport("winmm.dll", CharSet = CharSet.Unicode)] static extern int mciSendString(string command, StringBuilder result, int resultLength, IntPtr callback);
     [DllImport("winmm.dll", CharSet = CharSet.Unicode)] static extern bool mciGetErrorString(int code, StringBuilder text, int length);
     static void Command(string command) {

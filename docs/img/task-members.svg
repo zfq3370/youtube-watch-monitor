@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="760" viewBox="0 0 1180 760" role="img" aria-label="会员专属新视频任务的创建规则">
+  <defs>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+    <style>
+      text { font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif; }
+      .title { font-size: 27px; font-weight: bold; fill: #1f2937; }
+      .sub { font-size: 16px; fill: #64748b; }
+      .head { font-size: 21px; font-weight: bold; fill: #1f2937; }
+      .mono { font-size: 15px; font-family: "Consolas", "Microsoft YaHei UI", monospace; fill: #111827; }
+      .body { font-size: 16px; fill: #374151; }
+      .small { font-size: 15px; fill: #4b5563; }
+      .box { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.5; }
+      .line { stroke: #64748b; stroke-width: 2; fill: none; }
+    </style>
+  </defs>
+
+  <rect width="1180" height="760" fill="#ffffff"/>
+  <text x="40" y="50" class="title">图 2　会员专属新视频：链接怎么填、什么才算"新"</text>
+  <text x="40" y="80" class="sub">这个类型盯的是频道的"会员专享"内容，频道新发的普通公开视频不会打扰你。</text>
+
+  <g>
+    <rect x="40" y="110" width="560" height="470" rx="12" class="box"/>
+    <text x="66" y="150" class="head">① 链接：三种写法都可以</text>
+
+    <text x="66" y="190" class="body">推荐直接粘频道首页，程序会去掉多余路径：</text>
+    <rect x="66" y="204" width="508" height="42" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="80" y="231" class="mono">https://www.youtube.com/@samplechannel/videos</text>
+    <path d="M 320 250 L 320 268" class="line" marker-end="url(#arrow2)"/>
+    <rect x="66" y="272" width="508" height="42" rx="6" fill="#eef2ff" stroke="#818cf8"/>
+    <text x="80" y="299" class="mono">归一化为 https://www.youtube.com/@samplechannel</text>
+
+    <text x="66" y="346" class="body">频道 ID 形式同样可用（改 handle 也不受影响）：</text>
+    <rect x="66" y="360" width="508" height="42" rx="6" fill="#eef2ff" stroke="#818cf8"/>
+    <text x="80" y="387" class="mono">https://www.youtube.com/channel/UCX7kQ0mSampleChannelId0</text>
+
+    <text x="66" y="434" class="body">也可以粘会员专享播放列表（必须 UUMO 开头）：</text>
+    <rect x="66" y="448" width="508" height="42" rx="6" fill="#eef2ff" stroke="#818cf8"/>
+    <text x="80" y="475" class="mono">https://www.youtube.com/playlist?list=UUMOSampleChannelId0</text>
+
+    <rect x="66" y="506" width="508" height="56" rx="6" fill="#fef2f2" stroke="#fca5a5"/>
+    <text x="80" y="530" class="body" fill="#b91923">普通播放列表（PL 开头）会被拒绝：</text>
+    <text x="80" y="552" class="small" fill="#b91923">"请填频道首页链接或 UUMO 开头的会员专享播放列表链接。"</text>
+  </g>
+
+  <g>
+    <rect x="620" y="110" width="520" height="470" rx="12" class="box"/>
+    <text x="646" y="150" class="head">② 什么才算"新视频"</text>
+    <text x="646" y="182" class="body">程序读的是该频道会员专享列表（由新到旧）。</text>
+
+    <rect x="646" y="200" width="468" height="40" rx="6" fill="#fef2f2" stroke="#fca5a5"/>
+    <text x="660" y="226" class="body">会员视频 A　<tspan fill="#b91923">基准里没有 → 提醒</tspan></text>
+    <rect x="646" y="246" width="468" height="40" rx="6" fill="#fef2f2" stroke="#fca5a5"/>
+    <text x="660" y="272" class="body">会员视频 B　<tspan fill="#b91923">基准里没有 → 提醒</tspan></text>
+    <rect x="646" y="292" width="468" height="40" rx="6" fill="#fffbeb" stroke="#fcd34d"/>
+    <text x="660" y="318" class="body">会员视频 C　<tspan fill="#b45309">第一个"认得的"＝锚点</tspan></text>
+    <rect x="646" y="338" width="468" height="40" rx="6" fill="#f0fdf4" stroke="#86efac"/>
+    <text x="660" y="364" class="body">会员视频 D　<tspan fill="#166534">锚点之后 → 不提醒</tspan></text>
+    <rect x="646" y="384" width="468" height="40" rx="6" fill="#f0fdf4" stroke="#86efac"/>
+    <text x="660" y="410" class="body">会员视频 E　<tspan fill="#166534">回填的历史稿件，同样不提醒</tspan></text>
+
+    <text x="646" y="454" class="small">锚点之后出现的条目一律不报，避免频道重排、补档时刷一屏提醒。</text>
+    <rect x="646" y="470" width="468" height="46" rx="6" fill="#f5f3ff" stroke="#c4b5fd"/>
+    <text x="660" y="489" class="body">公开视频不算目标：列表里只认"会员专属"标记。</text>
+    <text x="660" y="509" class="small">所以频道正常更新的公开稿件不会打扰你。</text>
+    <rect x="646" y="524" width="468" height="42" rx="6" fill="#fff7ed" stroke="#fdba74"/>
+    <text x="660" y="543" class="body">整页都和基准无重叠时不判定为"全新"，</text>
+    <text x="660" y="562" class="small">状态会提示"列表与历史无重叠，暂不判定新视频"。</text>
+  </g>
+
+  <g>
+    <rect x="40" y="600" width="1100" height="120" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="66" y="638" class="head">第一次建任务会发生什么</text>
+    <text x="66" y="670" class="body">首次成功读取只把当前会员列表整体记为基准，状态显示<tspan font-weight="bold">"已建立 N 个会员视频基准，历史视频不提醒"</tspan>，不会补发历史提醒。</text>
+    <text x="66" y="698" class="small">前提是这个 Chrome 已登录且有该频道会员：没有会员权限时列表读不全，程序只会记"读取失败"，不会误报"没有新视频"。</text>
+  </g>
+</svg>
