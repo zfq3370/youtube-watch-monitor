@@ -1,0 +1,15 @@
+# 编译产物（源码 + build.cmd 即可复现，不提交二进制）
+*.exe
+*.pdb
+backups/
+dist/
+
+# 运行与测试留下的临时文件
+*-result.txt
+test-failure.txt
+*.tmp
+NVIDIA Corporation/
+
+# 万一你习惯把配置放在项目目录里，也别上传
+*配置*.json
+settings.local.json

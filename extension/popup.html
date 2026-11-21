@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>YouTube 多任务监控助手</title><link rel="stylesheet" href="popup.css"></head>
+<body>
+<h1>YouTube 多任务监控助手</h1>
+<p>任务链接、刷新间隔和音乐路径，均在桌面程序配置；本助手负责用当前登录账号读取页面。</p>
+<label for="code">本机配对码（点击桌面程序的“复制配对码”）</label>
+<input id="code" type="password" autocomplete="off" placeholder="已配对可留空，沿用现有配对">
+<div class="buttons"><button id="start">配对 / 恢复</button><button id="check">全部立即检查</button><button id="stop">全部暂停</button></div>
+<div id="status" role="status">读取状态…</div>
+<div id="tasks"></div>
+<small>每项任务复用一个专用标签页，按各自间隔刷新，不会每次新建。配置更改通常在 30 秒内同步；页面加载也需要时间。请保持 Chrome 和桌面程序运行。评论和会员页面都在后台标签页里静默加载，不需要额外窗口，也不会打断你正在浏览的页面。</small>
+<script src="popup.js"></script>
+</body></html>
