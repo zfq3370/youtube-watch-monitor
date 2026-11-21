@@ -188,6 +188,11 @@ async function main() {
   assert.equal(JSON.parse(read('manifest.json')).version, version, 'extension manifest carries the released version');
   assert.ok(fs.readFileSync(path.join(root, 'MonitorCore.cs'), 'utf8').includes('public const string Version = "' + version + '"'), 'desktop program reports the same version');
   JSON.parse(read('manifest.json')); for (const file of ['background.js', 'reader.js', 'content.js', 'inject.js', 'popup.js']) new vm.Script(read(file));
+  const manifest = JSON.parse(read('manifest.json'));
+  const iconFile = relative => path.join(root, 'extension', ...relative.split('/'));
+  assert.ok(fs.existsSync(path.join(root, 'icon', 'app.ico')), 'desktop program icon resource exists');
+  for (const group of [['icons', manifest.icons], ['action.default_icon', manifest.action?.default_icon]]) assert.ok(group[1] && Object.keys(group[1]).length >= 3, group[0] + ' declares several sizes');
+  for (const relative of new Set([...Object.values(manifest.icons), ...Object.values(manifest.action.default_icon)])) assert.ok(fs.existsSync(iconFile(relative)), 'extension icon ' + relative + ' exists');
   await testBackground(); testReaders(); for (const kind of ['normal', 'members', 'redirect', 'offline', 'retry', 'ordinary', 'slow-comments', 'background-only', 'background-delayed']) await testContent(kind);
   console.log('PASS all extension tests; synthetic tone at ' + makeAudio());
 }

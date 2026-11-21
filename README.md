@@ -163,7 +163,8 @@ make-zip.ps1   package.cmd 调用的压缩脚本（保证 zip 条目用正斜杠
 
 ```
 C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /nologo /target:winexe ^
-  /out:PinnedWatch.exe /reference:System.Windows.Forms.dll /reference:System.Drawing.dll ^
+  /out:PinnedWatch.exe /win32icon:icon\app.ico /resource:icon\app.ico,app.ico ^
+  /reference:System.Windows.Forms.dll /reference:System.Drawing.dll ^
   /reference:System.Web.Extensions.dll /reference:System.Web.dll /reference:System.Security.dll ^
   PinnedWatch.cs MonitorCore.cs CoreTests.cs
 ```
@@ -181,7 +182,10 @@ node test-monitor.cjs              扩展端调度、读取、内容脚本测试
 PinnedWatch.cs      WinForms 界面、本地 HTTP 服务、SMTP 发送、托盘与弹窗
 MonitorCore.cs      任务模型、变化判定规则、状态存储、配置导出/导入
 CoreTests.cs        原生自测用例
+make-icon.cjs       程序图标的绘制与导出；node make-icon.cjs 重新生成下面两处图标文件
+icon/app.ico        桌面程序图标（16/24/32/48/64 + 256），build.cmd 用 /win32icon 内嵌进 exe
 extension/          Chrome MV3 扩展（background / content / reader / inject / popup）
+extension/icons/    同一枚图标的 16 / 32 / 48 / 128 PNG，供 Chrome 工具栏与扩展页使用
 VERSION             版本号；需与 extension/manifest.json、MonitorCore.cs 中的 App.Version 一致（测试会检查）
 ```
 

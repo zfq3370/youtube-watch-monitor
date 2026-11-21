@@ -60,6 +60,24 @@ public static class SecureSmtp {
     }
 }
 
+static class WindowIcon {
+    // 图标随 exe 一起编译进清单资源，按需要的尺寸取最清晰的一档；万一取不到就退回系统图标，不影响任何功能。
+    static readonly byte[] data = Read();
+    static byte[] Read() {
+        try {
+            using (var stream = typeof(WindowIcon).Assembly.GetManifestResourceStream("app.ico")) {
+                if (stream == null) return null;
+                byte[] all = new byte[stream.Length];
+                return stream.Read(all, 0, all.Length) == all.Length ? all : null;
+            }
+        } catch { return null; }
+    }
+    public static Icon Load(int size) {
+        try { if (data != null) return new Icon(new MemoryStream(data), new Size(size, size)); } catch { }
+        try { return Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { return SystemIcons.Application; }
+    }
+}
+
 public class TaskEditor : Form {
     public WatchTask Result;
     TextBox nameBox, urlBox, authorBox, commentBox;
@@ -69,7 +87,7 @@ public class TaskEditor : Form {
         SuspendLayout(); AutoScaleDimensions = new SizeF(96, 96); AutoScaleMode = AutoScaleMode.Dpi;
         Text = existing == null ? "添加监控任务" : "编辑监控任务"; ClientSize = new Size(730, 570);
         StartPosition = FormStartPosition.CenterParent; Font = new Font("Microsoft YaHei UI", 10);
-        MinimumSize = new Size(650, 540); BackColor = Color.FromArgb(248, 250, 253);
+        MinimumSize = new Size(650, 540); BackColor = Color.FromArgb(248, 250, 253); Icon = WindowIcon.Load(32);
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, ColumnCount = 2, RowCount = 9, Padding = new Padding(20) };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 135)); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         for (int i = 0; i < 9; i++) layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); Controls.Add(layout);
@@ -125,7 +143,7 @@ public class MonitorForm : Form {
         notices = Store.Load<List<Notice>>("notices.json") ?? new List<Notice>();
         if (tasks == null) { tasks = new List<WatchTask>(); Store.Save("tasks.json", tasks); }
         foreach (WatchTask task in tasks) { Rules.Validate(task); if (!states.ContainsKey(task.id)) states[task.id] = new TaskState(); states[task.id].lastReport = DateTime.Now; states[task.id].staleWarned = false; }
-        Text = "YouTube 多任务监控面板 v" + App.Version; ClientSize = new Size(1120, 760); MinimumSize = new Size(900, 660); StartPosition = FormStartPosition.CenterScreen;
+        Text = "YouTube 多任务监控面板 v" + App.Version; ClientSize = new Size(1120, 760); MinimumSize = new Size(900, 660); StartPosition = FormStartPosition.CenterScreen; Icon = WindowIcon.Load(32);
         Font = new Font("Microsoft YaHei UI", 10); BackColor = Color.FromArgb(246, 248, 252);
         var root = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 3, ColumnCount = 1, Padding = new Padding(18) };
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize)); root.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); root.RowStyles.Add(new RowStyle(SizeType.AutoSize)); Controls.Add(root);
@@ -135,7 +153,7 @@ public class MonitorForm : Form {
         var footer = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, FlowDirection = FlowDirection.RightToLeft, Margin = new Padding(0, 8, 0, 0) };
         footer.Controls.Add(Button("退出程序", delegate { exiting = true; Close(); })); footer.Controls.Add(Button("最小化到托盘", delegate { Hide(); }));
         footer.Controls.Add(Button("停止音乐", delegate { StopMusic(); })); root.Controls.Add(footer, 0, 2);
-        tray = new NotifyIcon { Icon = SystemIcons.Information, Text = "YouTube 多任务监控", Visible = true };
+        tray = new NotifyIcon { Icon = WindowIcon.Load(16), Text = "YouTube 多任务监控", Visible = true };
         tray.DoubleClick += delegate { Show(); WindowState = FormWindowState.Normal; Activate(); };
         var menu = new ContextMenuStrip(); menu.Items.Add("打开面板", null, delegate { Show(); Activate(); }); menu.Items.Add("停止音乐", null, delegate { StopMusic(); }); menu.Items.Add("退出", null, delegate { exiting = true; Close(); }); tray.ContextMenuStrip = menu;
         FormClosing += delegate(object sender, FormClosingEventArgs e) { if (!exiting) { e.Cancel = true; Hide(); } };
@@ -393,7 +411,7 @@ public class MonitorForm : Form {
     }
     void QueueTestMail() { if (!MailReady()) { mailStatus.Text = "请先在“邮箱设置”中填写服务器、发件邮箱和授权码，并启用邮件发送。"; return; } if (mailBusy) { mailStatus.Text = "正在发送其他邮件，请稍后再试。"; return; } StartMail("test", "邮件通道测试", "这是 YouTube 多任务监控程序的测试邮件。\r\n收到此邮件表示邮件通道可用。"); mailStatus.Text = "正在发送测试邮件…"; }
     void ConfigureMail() {
-        using (var form = new Form { Text = "邮箱设置（信息只保存在本机）", ClientSize = new Size(700, 640), MinimumSize = new Size(620, 520), StartPosition = FormStartPosition.CenterParent, Font = Font, AutoScaleDimensions = new SizeF(96, 96), AutoScaleMode = AutoScaleMode.Dpi, BackColor = Color.FromArgb(248, 250, 253) }) {
+        using (var form = new Form { Text = "邮箱设置（信息只保存在本机）", ClientSize = new Size(700, 640), MinimumSize = new Size(620, 520), StartPosition = FormStartPosition.CenterParent, Font = Font, AutoScaleDimensions = new SizeF(96, 96), AutoScaleMode = AutoScaleMode.Dpi, BackColor = Color.FromArgb(248, 250, 253), Icon = WindowIcon.Load(32) }) {
             var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, ColumnCount = 1, RowCount = 7, Padding = new Padding(20) };
             for (int i = 0; i < 7; i++) layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -473,7 +491,7 @@ public class MonitorForm : Form {
     void PlayMusic() { previewTimer.Stop(); try { AlertMusic.Play(settings.musicPath, settings.volume, settings.loop); } catch (Exception ex) { musicStatus.Text = "音乐未能播放：" + ex.Message; System.Media.SystemSounds.Exclamation.Play(); } }
     void ShowAlert(string title, string body, string url, bool music) {
         if (alert == null || alert.IsDisposed) {
-            alertCount = 0; alert = new Form { Text = "YouTube 监控提醒", AutoScaleDimensions = new SizeF(96, 96), AutoScaleMode = AutoScaleMode.Dpi, ClientSize = new Size(920, 690), MinimumSize = new Size(760, 550), TopMost = true, StartPosition = FormStartPosition.CenterScreen, BackColor = Color.FromArgb(255, 248, 235), Font = new Font("Microsoft YaHei UI", 12) };
+            alertCount = 0; alert = new Form { Text = "YouTube 监控提醒", AutoScaleDimensions = new SizeF(96, 96), AutoScaleMode = AutoScaleMode.Dpi, ClientSize = new Size(920, 690), MinimumSize = new Size(760, 550), TopMost = true, StartPosition = FormStartPosition.CenterScreen, BackColor = Color.FromArgb(255, 248, 235), Font = new Font("Microsoft YaHei UI", 12), Icon = WindowIcon.Load(32) };
             var layout = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 3, ColumnCount = 1, Padding = new Padding(20) }; layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); alert.Controls.Add(layout);
             alertTitle = new Label { Dock = DockStyle.Fill, AutoSize = true, Margin = new Padding(3, 0, 3, 14), ForeColor = Color.FromArgb(185, 25, 35), Font = new Font("Microsoft YaHei UI", 23, FontStyle.Bold) }; layout.Controls.Add(alertTitle, 0, 0);
             alertBody = new TextBox { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, BackColor = Color.White, Font = new Font("Microsoft YaHei UI", 13) }; layout.Controls.Add(alertBody, 0, 1);

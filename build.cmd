@@ -13,7 +13,9 @@ if not exist "%CSC%" (
 )
 
 del /q PinnedWatch.build.exe >nul 2>&1
-"%CSC%" /nologo /target:winexe /out:PinnedWatch.build.exe ^
+set ICONFLAGS=
+if exist icon\app.ico set ICONFLAGS=/win32icon:icon\app.ico /resource:icon\app.ico,app.ico
+"%CSC%" /nologo /target:winexe /out:PinnedWatch.build.exe %ICONFLAGS% ^
   /reference:System.Windows.Forms.dll /reference:System.Drawing.dll ^
   /reference:System.Web.Extensions.dll /reference:System.Web.dll /reference:System.Security.dll ^
   PinnedWatch.cs MonitorCore.cs CoreTests.cs

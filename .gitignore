@@ -13,3 +13,6 @@ NVIDIA Corporation/
 # 万一你习惯把配置放在项目目录里，也别上传
 *配置*.json
 settings.local.json
+
+# 图标预览图（node make-icon.cjs 随时可重新生成）
+icon/app-preview.png
