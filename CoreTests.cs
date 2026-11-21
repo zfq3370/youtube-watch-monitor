@@ -104,6 +104,12 @@ public static class CoreTests {
         Assert(new JavaScriptSerializer().Deserialize<TaskState>(new JavaScriptSerializer().Serialize(state)).seenVideos.Count == state.seenVideos.Count, "persistent member baseline roundtrip");
         Assert(AlertMusic.ValidatePath("") == "", "empty music uses system sound");
         Reject(delegate { AlertMusic.ValidatePath("missing.mp3"); }, "missing music rejected");
-        File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "self-test-result.txt"), "PASS: " + count + " checks; exact comments, pinned author changes, two-scan removal, failures, deduplication, member baseline/new-prefix/backfill/public exclusion, URL validation, persistence, DPAPI, music paths, config export/import without secrets", new UTF8Encoding(false));
+        var stateMap = new Dictionary<string, TaskState>();
+        Assert(!stateMap.Find("gone").ready && stateMap.Count == 0, "deleted task detail stays safe");
+        Assert(stateMap.Ensure("a") != null && stateMap.Count == 1 && ReferenceEquals(stateMap["a"], stateMap.Ensure("a")), "state ensure registers once");
+        Assert(MailPresets.IndexOf("smtp.163.com") == 0 && MailPresets.IndexOf("SMTP.QQ.COM") == 2, "mail preset matches host");
+        Assert(MailPresets.IndexOf("") == MailPresets.All.Length - 1 && MailPresets.IndexOf("mail.example.com") == MailPresets.All.Length - 1, "unknown mail host falls back to manual");
+        foreach (MailPreset preset in MailPresets.All) Assert(preset.host == "" || Rules.IsHost(preset.host), "preset smtp host is valid");
+        File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "self-test-result.txt"), "PASS: " + count + " checks; exact comments, pinned author changes, two-scan removal, failures, deduplication, member baseline/new-prefix/backfill/public exclusion, URL validation, persistence, DPAPI, music paths, mail presets, state lookups, config export/import without secrets", new UTF8Encoding(false));
     }
 }

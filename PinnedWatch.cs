@@ -110,6 +110,7 @@ public class MonitorForm : Form {
     HttpListener listener; readonly ConcurrentQueue<Observation> observations = new ConcurrentQueue<Observation>();
     readonly ConcurrentQueue<MailResult> mailResults = new ConcurrentQueue<MailResult>();
     DataGridView grid; TextBox detail, history, musicPath; Label connection, mailStatus, musicStatus, migrationStatus;
+    RadioButton systemSoundChoice, customMusicChoice; Button musicBrowse;
     NumericUpDown volume; CheckBox loop; NotifyIcon tray; Form alert; TextBox alertBody; Label alertTitle; int alertCount;
     readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer(); readonly System.Windows.Forms.Timer previewTimer = new System.Windows.Forms.Timer();
     bool exiting, mailBusy; DateTime nextMail = DateTime.MinValue, nextCheckAllowed = DateTime.MinValue;
@@ -203,18 +204,31 @@ public class MonitorForm : Form {
     }
     void BuildMusic(TabControl tabs) {
         var panel = Stack(Page(tabs, "音乐与提醒"));
-        panel.Controls.Add(Label("本地音乐路径（MP3 / WAV）："));
+        panel.Controls.Add(Label("提醒声音："));
+        systemSoundChoice = new RadioButton { Text = "Windows 系统提示音（推荐：任何电脑都有，不用选文件）", AutoSize = true, Margin = new Padding(4, 4, 4, 4) };
+        customMusicChoice = new RadioButton { Text = "播放我自己的音乐文件（MP3 / WAV，只在本机播放，不上传）", AutoSize = true, Margin = new Padding(4, 4, 4, 4) };
+        panel.Controls.Add(systemSoundChoice); panel.Controls.Add(customMusicChoice);
         musicPath = new TextBox { Width = 810, Text = settings.musicPath ?? "" }; panel.Controls.Add(musicPath);
-        panel.Controls.Add(Button("浏览音乐文件", delegate { using (var picker = new OpenFileDialog { Filter = "音乐文件 (*.mp3;*.wav)|*.mp3;*.wav", CheckFileExists = true, Multiselect = false }) if (picker.ShowDialog(this) == DialogResult.OK) musicPath.Text = picker.FileName; }));
+        musicBrowse = Button("浏览音乐文件", delegate { using (var picker = new OpenFileDialog { Filter = "音乐文件 (*.mp3;*.wav)|*.mp3;*.wav", CheckFileExists = true, Multiselect = false }) if (picker.ShowDialog(this) == DialogResult.OK) musicPath.Text = picker.FileName; });
+        panel.Controls.Add(musicBrowse);
+        SyncMusicControls();
+        systemSoundChoice.CheckedChanged += delegate { if (systemSoundChoice.Checked) ApplyMusicMode(false); };
+        customMusicChoice.CheckedChanged += delegate { if (customMusicChoice.Checked) ApplyMusicMode(true); };
         panel.Controls.Add(Label("音量（0～100，仅调整本程序的音乐，不改变系统音量）："));
         volume = new NumericUpDown { Minimum = 0, Maximum = 100, Value = Math.Max(0, Math.Min(100, settings.volume)), Width = 140 }; panel.Controls.Add(volume);
         loop = new CheckBox { Text = "循环播放，直到点击“知道了”或关闭提醒弹窗", Checked = settings.loop, AutoSize = true, Margin = new Padding(4, 15, 4, 15) }; panel.Controls.Add(loop);
         var buttons = new FlowLayoutPanel { Width = 820, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true };
-        buttons.Controls.Add(Button("保存音乐设置", delegate { try { settings.musicPath = AlertMusic.ValidatePath(musicPath.Text); settings.volume = (int)volume.Value; settings.loop = loop.Checked; Store.Save("settings.json", settings); musicPath.Text = settings.musicPath; musicStatus.Text = "音乐设置已保存；文件留空时使用系统提示音。"; } catch (ArgumentException ex) { musicStatus.Text = ex.Message; } }));
-        buttons.Controls.Add(Button("试听 10 秒", delegate { try { previewTimer.Stop(); AlertMusic.Play(musicPath.Text, (int)volume.Value, loop.Checked); previewTimer.Start(); musicStatus.Text = "正在试听，可随时点“停止音乐”。"; } catch (Exception ex) { musicStatus.Text = "音乐未能播放：" + ex.Message; } }));
+        buttons.Controls.Add(Button("保存音乐设置", delegate { try { settings.musicPath = customMusicChoice.Checked ? AlertMusic.ValidatePath(musicPath.Text) : ""; settings.volume = (int)volume.Value; settings.loop = loop.Checked; Store.Save("settings.json", settings); SyncMusicControls(); musicStatus.Text = customMusicChoice.Checked ? "已保存：提醒时播放这个文件。" : "已保存：提醒时播放 Windows 系统提示音。"; } catch (ArgumentException ex) { musicStatus.Text = ex.Message; } }));
+        buttons.Controls.Add(Button("试听 10 秒", delegate { try { previewTimer.Stop(); AlertMusic.Play(customMusicChoice.Checked ? AlertMusic.ValidatePath(musicPath.Text) : "", (int)volume.Value, loop.Checked); previewTimer.Start(); musicStatus.Text = "正在试听，可随时点“停止音乐”。"; } catch (Exception ex) { musicStatus.Text = "音乐未能播放：" + ex.Message; } }));
         buttons.Controls.Add(Button("测试弹窗与音乐", delegate { ShowAlert("测试：桌面弹窗与音乐", "这是一条测试提醒，不是实际评论或新视频变化。\r\n正式提醒会显示任务名称、变化前后正文或新视频标题。", null, true); })); panel.Controls.Add(buttons);
-        musicStatus = Label("音乐路径留空时使用系统提示音。测试弹窗使用已保存的设置。"); panel.Controls.Add(musicStatus);
-        panel.Controls.Add(Label("每个任务可独立开启 / 关闭邮件、弹窗和音乐。建议需要循环音乐的任务同时启用弹窗。\r\n只播放本机文件，不上传音乐；点“知道了”、关闭弹窗或退出程序都会停止音乐。\r\nChrome 和程序必须保持运行；电脑休眠时无法检查，锁屏时弹窗要解锁后才能看见。"));
+        musicStatus = Label("系统提示音不需要任何文件；选自己的音乐时路径只保存在本机。测试弹窗使用已保存的设置。"); panel.Controls.Add(musicStatus);
+        panel.Controls.Add(Label("每个任务可独立开启 / 关闭邮件、弹窗和音乐。建议需要循环音乐的任务同时启用弹窗。\r\n只播放本机文件或系统提示音，不上传音乐；点“知道了”、关闭弹窗或退出程序都会停止音乐。\r\nChrome 和程序必须保持运行；电脑休眠时无法检查，锁屏时弹窗要解锁后才能看见。"));
+    }
+    void ApplyMusicMode(bool useCustom) { musicPath.Enabled = useCustom; musicBrowse.Enabled = useCustom; }
+    void SyncMusicControls() {
+        bool useCustom = !String.IsNullOrEmpty(settings.musicPath);
+        systemSoundChoice.Checked = !useCustom; customMusicChoice.Checked = useCustom;
+        musicPath.Text = settings.musicPath ?? ""; ApplyMusicMode(useCustom);
     }
     void BuildHistory(TabControl tabs) { var page = Page(tabs, "提醒记录"); history = new TextBox { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, BackColor = Color.White }; page.Controls.Add(history); }
     void BuildConnection(TabControl tabs) {
@@ -265,7 +279,7 @@ public class MonitorForm : Form {
                 if (MessageBox.Show(this, warning, "确认导入配置", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
                 migrationStatus.Text = Migration.Apply(package, settings, tasks, states);
                 Store.Save("settings.json", settings);
-                musicPath.Text = settings.musicPath; volume.Value = settings.volume; loop.Checked = settings.loop;
+                SyncMusicControls(); volume.Value = settings.volume; loop.Checked = settings.loop;
                 SaveTasks(); UpdateMailLabel();
                 migrationStatus.Text += "\r\nChrome 助手通常会在 30 秒内收到新任务，可到“监控任务”查看状态。";
             } catch (Exception ex) { migrationStatus.Text = "未能导入：" + ex.Message + "\r\n本机现有任务没有被改动。"; }
@@ -302,12 +316,12 @@ public class MonitorForm : Form {
     void PublishTasks() { taskResponse = new JavaScriptSerializer().Serialize(new { version = 2, forceCheck = forceCheck, tasks = tasks }); }
     void RefreshGrid() {
         string id = Selected() == null ? null : Selected().id; grid.Rows.Clear();
-        foreach (var task in tasks) { TaskState state = states[task.id]; int row = grid.Rows.Add(task.enabled ? "是" : "暂停", task.name, Rules.ModeName(task.mode), task.intervalSeconds + "秒", state.checkedAt, task.enabled ? state.status : "已暂停"); grid.Rows[row].Tag = task; if (task.id == id) grid.CurrentCell = grid.Rows[row].Cells[1]; }
+        foreach (var task in tasks) { TaskState state = states.Find(task.id); int row = grid.Rows.Add(task.enabled ? "是" : "暂停", task.name, Rules.ModeName(task.mode), task.intervalSeconds + "秒", state.checkedAt, task.enabled ? state.status : "已暂停"); grid.Rows[row].Tag = task; if (task.id == id) grid.CurrentCell = grid.Rows[row].Cells[1]; }
         ShowDetail();
     }
     void ShowDetail() {
         if (detail == null) return; WatchTask task = Selected(); if (task == null) { detail.Text = "选择任务查看详情，或点击“添加任务”。"; return; }
-        TaskState state = states[task.id];
+        TaskState state = states.Find(task.id);
         detail.Text = "任务：" + task.name + "\r\n链接：" + task.url + "\r\n通知：" + (task.popup ? "弹窗 " : "") + (task.email ? "邮件 " : "") + (task.music ? "音乐" : "") +
             (task.mode == "pinned" ? "\r\n评论作者：" + (task.author == "" ? "任意作者" : task.author) : task.mode == "comment" ? "\r\n评论编号：" + task.commentId : "\r\n累计已记录会员视频：" + state.seenVideos.Count) + "\r\n最近检查：" + state.checkedAt + "\r\n状态：" + state.status + (state.comment == null ? "" : "\r\n\r\n最近成功读取的评论：\r\n" + state.comment.text);
     }
@@ -350,8 +364,9 @@ public class MonitorForm : Form {
         bool changed = false; Observation o;
         while (observations.TryDequeue(out o)) {
             WatchTask task = tasks.Find(t => t.id == o.taskId && t.enabled && t.revision == o.revision); if (task == null) continue;
-            var fresh = Engine.Observe(task, states[task.id], o); notices.AddRange(fresh); changed = true;
-            connection.Text = "助手已连接。最近收到任务报告：" + task.name + "，" + states[task.id].checkedAt;
+            TaskState state = states.Ensure(task.id);
+            var fresh = Engine.Observe(task, state, o); notices.AddRange(fresh); changed = true;
+            connection.Text = "助手已连接。最近收到任务报告：" + task.name + "，" + state.checkedAt;
             foreach (Notice notice in fresh) {
                 if (notice.popup) ShowAlert(notice.kind, notice.body, notice.url, notice.music);
                 else if (notice.music) PlayMusic();
@@ -360,7 +375,7 @@ public class MonitorForm : Form {
         }
         if (changed) { Store.Save("task-states.json", states); RefreshGrid(); }
         foreach (WatchTask task in tasks.Where(t => t.enabled)) {
-            TaskState state = states[task.id];
+            TaskState state = states.Ensure(task.id);
             if (!state.staleWarned && (DateTime.Now - state.lastReport).TotalSeconds > Math.Max(600, task.intervalSeconds * 2 + 120)) { state.staleWarned = true; state.status = "长时间没有收到报告，请检查助手、Chrome 和网络"; RefreshGrid(); connection.Text = task.name + "：" + state.status; }
         }
         MailResult result;
@@ -378,43 +393,75 @@ public class MonitorForm : Form {
     }
     void QueueTestMail() { if (!MailReady()) { mailStatus.Text = "请先在“邮箱设置”中填写服务器、发件邮箱和授权码，并启用邮件发送。"; return; } if (mailBusy) { mailStatus.Text = "正在发送其他邮件，请稍后再试。"; return; } StartMail("test", "邮件通道测试", "这是 YouTube 多任务监控程序的测试邮件。\r\n收到此邮件表示邮件通道可用。"); mailStatus.Text = "正在发送测试邮件…"; }
     void ConfigureMail() {
-        using (var form = new Form { Text = "邮箱设置（信息只保存在本机）", ClientSize = new Size(700, 620), MinimumSize = new Size(620, 520), StartPosition = FormStartPosition.CenterParent, Font = Font, AutoScaleDimensions = new SizeF(96, 96), AutoScaleMode = AutoScaleMode.Dpi, BackColor = Color.FromArgb(248, 250, 253) }) {
-            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, ColumnCount = 1, RowCount = 6, Padding = new Padding(20) };
-            for (int i = 0; i < 6; i++) layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        using (var form = new Form { Text = "邮箱设置（信息只保存在本机）", ClientSize = new Size(700, 640), MinimumSize = new Size(620, 520), StartPosition = FormStartPosition.CenterParent, Font = Font, AutoScaleDimensions = new SizeF(96, 96), AutoScaleMode = AutoScaleMode.Dpi, BackColor = Color.FromArgb(248, 250, 253) }) {
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, ColumnCount = 1, RowCount = 7, Padding = new Padding(20) };
+            for (int i = 0; i < 7; i++) layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             form.Controls.Add(layout);
-            layout.Controls.Add(new Label { Text = "程序用 SMTP（465 端口、SSL）直接发信，不经过任何第三方服务。\r\n163 / 126 / QQ 邮箱需先在网页邮箱设置里开启 SMTP，并获取“客户端授权码”（不是邮箱登录密码）。", AutoSize = true, Dock = DockStyle.Top, MaximumSize = new Size(620, 0), Margin = new Padding(3, 0, 3, 18) }, 0, 0);
-            TextBox host = MailField(layout, 1, "SMTP 服务器（例如 smtp.163.com）", settings.smtpHost);
-            TextBox user = MailField(layout, 2, "发件邮箱，也就是登录名", settings.mailUser);
-            TextBox to = MailField(layout, 3, "收件邮箱（留空表示发给自己）", settings.mailTo);
-            TextBox password = MailField(layout, 4, "SMTP 客户端授权码（按当前 Windows 用户加密，不写进配置文件；已有配置时留空表示不修改）", "");
+            layout.Controls.Add(new Label { Text = "程序用 SMTP（465 端口、SSL）直接发信，不经过任何第三方服务。\r\n只需三样：选服务商、填你的邮箱、填客户端授权码（不是邮箱登录密码）。", AutoSize = true, Dock = DockStyle.Top, MaximumSize = new Size(620, 0), Margin = new Padding(3, 0, 3, 18) }, 0, 0);
+            var providerCell = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 1, RowCount = 2, Margin = new Padding(3, 3, 3, 12) };
+            providerCell.RowStyles.Add(new RowStyle(SizeType.AutoSize)); providerCell.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            providerCell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            providerCell.Controls.Add(new Label { Text = "邮箱服务商（选完下面两栏自动填好）", AutoSize = true, Dock = DockStyle.Top, MaximumSize = new Size(620, 0), Margin = new Padding(0, 0, 0, 5) }, 0, 0);
+            var provider = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Top };
+            foreach (MailPreset preset in MailPresets.All) provider.Items.Add(preset.label);
+            providerCell.Controls.Add(provider, 0, 1); layout.Controls.Add(providerCell, 0, 1);
+            Label hostHelp, codeHelp;
+            TextBox host = MailField(layout, 2, "SMTP 服务器", settings.smtpHost, "", out hostHelp);
+            TextBox user = MailField(layout, 3, "你的邮箱地址（发件用的登录名）", settings.mailUser, "填完整地址，例如 xxx@163.com；程序就用这个账号登录发信。");
+            TextBox password = MailField(layout, 4, "SMTP 客户端授权码", "", "按当前 Windows 用户加密保存在本机，不写进配置文件；之前填过可以留空。", out codeHelp);
             password.UseSystemPasswordChar = true;
+            Action apply = delegate {
+                MailPreset preset = MailPresets.At(provider.SelectedIndex);
+                if (preset.host.Length > 0) host.Text = preset.host;
+                host.ReadOnly = preset.host.Length > 0;
+                hostHelp.Text = preset.serverHelp; codeHelp.Text = preset.codeHelp;
+            };
+            provider.SelectedIndexChanged += delegate { apply(); };
+            provider.SelectedIndex = MailPresets.IndexOf(settings.smtpHost);
+            var toCell = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 1, RowCount = 3, Margin = new Padding(3, 3, 3, 12) };
+            for (int i = 0; i < 3; i++) toCell.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            toCell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            var otherTo = new CheckBox { Text = "提醒发到另一个邮箱（默认发给自己，一般不用勾）", AutoSize = true, Dock = DockStyle.Top, Margin = new Padding(0, 0, 0, 5) };
+            TextBox to = new TextBox { Dock = DockStyle.Top, Text = settings.mailTo ?? "" };
+            bool sendElsewhere = !String.IsNullOrEmpty(settings.mailTo);
+            otherTo.Checked = sendElsewhere; to.ReadOnly = !sendElsewhere;
+            otherTo.CheckedChanged += delegate { to.ReadOnly = !otherTo.Checked; };
+            toCell.Controls.Add(otherTo, 0, 0); toCell.Controls.Add(to, 0, 1);
+            toCell.Controls.Add(new Label { Text = "不勾就发到你上面填的那个邮箱。", AutoSize = true, Dock = DockStyle.Top, MaximumSize = new Size(620, 0), ForeColor = Color.FromArgb(75, 91, 111), Margin = new Padding(0, 5, 0, 0) }, 0, 2);
+            layout.Controls.Add(toCell, 0, 5);
             var buttons = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true, Margin = new Padding(3, 14, 3, 6) };
             var save = new Button { Text = "保存", AutoSize = true, MinimumSize = new Size(150, 40), Padding = new Padding(10, 6, 10, 6), Margin = new Padding(4) };
             var test = new Button { Text = "保存并发测试邮件", AutoSize = true, MinimumSize = new Size(190, 40), Padding = new Padding(10, 6, 10, 6), Margin = new Padding(4) };
             var cancel = new Button { Text = "取消", AutoSize = true, MinimumSize = new Size(120, 40), Padding = new Padding(10, 6, 10, 6), Margin = new Padding(4), DialogResult = DialogResult.Cancel };
-            buttons.Controls.AddRange(new Control[] { save, test, cancel }); layout.Controls.Add(buttons, 0, 5);
+            buttons.Controls.AddRange(new Control[] { save, test, cancel }); layout.Controls.Add(buttons, 0, 6);
             form.CancelButton = cancel;
             save.Click += delegate { if (SaveMailFields(host, user, to, password, form)) form.Close(); };
             test.Click += delegate { if (SaveMailFields(host, user, to, password, form)) { form.Close(); QueueTestMail(); } };
             form.ShowDialog(this);
         }
     }
-    static TextBox MailField(TableLayoutPanel layout, int row, string caption, string value) {
-        var cell = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 1, RowCount = 2, Margin = new Padding(3, 3, 3, 12) };
-        cell.RowStyles.Add(new RowStyle(SizeType.AutoSize)); cell.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+    static TextBox MailField(TableLayoutPanel layout, int row, string caption, string value, string help) {
+        Label ignored; return MailField(layout, row, caption, value, help, out ignored);
+    }
+    static TextBox MailField(TableLayoutPanel layout, int row, string caption, string value, string help, out Label helpLabel) {
+        var cell = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 1, RowCount = 3, Margin = new Padding(3, 3, 3, 12) };
+        for (int i = 0; i < 3; i++) cell.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         cell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         cell.Controls.Add(new Label { Text = caption, AutoSize = true, Dock = DockStyle.Top, MaximumSize = new Size(620, 0), Margin = new Padding(0, 0, 0, 5) }, 0, 0);
         var box = new TextBox { Dock = DockStyle.Top, Text = value ?? "" };
         cell.Controls.Add(box, 0, 1);
+        helpLabel = new Label { Text = help ?? "", AutoSize = true, Dock = DockStyle.Top, MaximumSize = new Size(620, 0), ForeColor = Color.FromArgb(75, 91, 111), Margin = new Padding(0, 5, 0, 0) };
+        cell.Controls.Add(helpLabel, 0, 2);
         layout.Controls.Add(cell, 0, row);
         return box;
     }
     bool SaveMailFields(TextBox host, TextBox user, TextBox to, TextBox password, Form form) {
-        string hostText = Store.Normalize(host.Text), userText = Store.Normalize(user.Text), toText = Store.Normalize(to.Text);
+        string hostText = Store.Normalize(host.Text), userText = Store.Normalize(user.Text);
+        string toText = to.ReadOnly ? "" : Store.Normalize(to.Text);
         string error = !Rules.IsHost(hostText) ? "SMTP 服务器填写不正确，例如 smtp.163.com。" :
-            !Rules.IsEmail(userText) ? "发件邮箱填写不正确，需要包含 @ 的完整地址。" :
-            toText.Length > 0 && !Rules.IsEmail(toText) ? "收件邮箱填写不正确；留空表示发给自己。" : null;
+            !Rules.IsEmail(userText) ? "邮箱地址填写不正确，需要包含 @ 的完整地址。" :
+            toText.Length > 0 && !Rules.IsEmail(toText) ? "收件邮箱填写不正确；不勾上面那行就发给自己。" : null;
         if (error != null) { MessageBox.Show(form, error, "请检查邮箱设置", MessageBoxButtons.OK, MessageBoxIcon.Warning); return false; }
         settings.smtpHost = hostText; settings.mailUser = userText; settings.mailTo = toText;
         if (!String.IsNullOrWhiteSpace(password.Text)) settings.password = Store.Protect(password.Text.Trim());

@@ -31,6 +31,17 @@ public class TaskState {
     public string checkedAt = ""; public string status = "等待首次检查"; public string lastScan;
     public int missingCount; public DateTime lastReport = DateTime.Now; public bool staleWarned;
 }
+public static class TaskStateLookup {
+    // 删除任务的同一瞬间表格还会用被删的那一行刷新详情，此时按 id 取状态必须安全返回，不能抛异常。
+    public static TaskState Find(this Dictionary<string, TaskState> states, string id) {
+        TaskState state; return states != null && !String.IsNullOrEmpty(id) && states.TryGetValue(id, out state) && state != null ? state : new TaskState();
+    }
+    public static TaskState Ensure(this Dictionary<string, TaskState> states, string id) {
+        TaskState state; if (states == null || String.IsNullOrEmpty(id)) return new TaskState();
+        if (!states.TryGetValue(id, out state) || state == null) { state = new TaskState(); states[id] = state; }
+        return state;
+    }
+}
 public class Notice {
     public string id = Guid.NewGuid().ToString("N"); public string taskId; public string taskName;
     public string kind; public string at; public string body; public string url;
@@ -117,8 +128,29 @@ public static class Migration {
 
 public static class App {
     // 发布时三处版本号需一致：此处、VERSION 文件、extension/manifest.json（测试会检查）。
-    public const string Version = "2.1.0";
+    public const string Version = "2.2.0";
     public const string ConfigApp = "youtube-watch-monitor";
+}
+
+public class MailPreset { public string label; public string host; public string serverHelp; public string codeHelp; }
+public static class MailPresets {
+    // 授权码获取路径按 2026-11 各服务商官方帮助页核实；界面只提示入口，不代替用户操作网页。
+    public static readonly MailPreset[] All = {
+        new MailPreset { label = "163 免费邮", host = "smtp.163.com", serverHelp = "已按服务商填好，一般不用改。",
+            codeHelp = "获取授权码：登录 mail.163.com → 顶部“设置” → “POP3/SMTP/IMAP” → 开启 IMAP/SMTP 服务 → 点“新增授权码”（要手机验证），把生成的那串填到上面。" },
+        new MailPreset { label = "126 邮箱", host = "smtp.126.com", serverHelp = "已按服务商填好，一般不用改。",
+            codeHelp = "获取授权码：登录 mail.126.com → 顶部“设置” → “POP3/SMTP/IMAP” → 开启 IMAP/SMTP 服务 → 点“新增授权码”（要手机验证）。" },
+        new MailPreset { label = "QQ 邮箱", host = "smtp.qq.com", serverHelp = "已按服务商填好，一般不用改。",
+            codeHelp = "获取授权码：登录 mail.qq.com → 顶部“设置” → “账号” → 找到“POP3/IMAP/SMTP…”服务 → 开启 IMAP/SMTP → 点“生成授权码”（要 QQ 安全验证）。" },
+        new MailPreset { label = "其他邮箱（自己填服务器）", host = "", serverHelp = "填你邮箱服务商的 SMTP 服务器地址，须支持 465 端口 SSL；授权码在它自己的网页设置里获取。",
+            codeHelp = "授权码一般在该邮箱网页设置的“POP3/IMAP/SMTP”或“账户与安全”里生成；不是邮箱登录密码。Gmail、Outlook 等在国内无法直连，不建议用。" }
+    };
+    public static int IndexOf(string host) {
+        string value = (host ?? "").Trim();
+        for (int i = 0; i < All.Length; i++) if (All[i].host.Length > 0 && All[i].host.Equals(value, StringComparison.OrdinalIgnoreCase)) return i;
+        return All.Length - 1;
+    }
+    public static MailPreset At(int index) { return index >= 0 && index < All.Length ? All[index] : All[All.Length - 1]; }
 }
 
 public static class Store {

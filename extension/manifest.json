@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube 多任务监控助手",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "按桌面程序配置监控指定评论、博主置顶评论和会员专属新视频。",
   "permissions": ["alarms", "storage", "webNavigation", "scripting"],
   "host_permissions": ["https://www.youtube.com/*", "http://127.0.0.1:18964/*"],
