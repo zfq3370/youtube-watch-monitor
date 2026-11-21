@@ -110,6 +110,16 @@ public static class CoreTests {
         Assert(MailPresets.IndexOf("smtp.163.com") == 0 && MailPresets.IndexOf("SMTP.QQ.COM") == 2, "mail preset matches host");
         Assert(MailPresets.IndexOf("") == MailPresets.All.Length - 1 && MailPresets.IndexOf("mail.example.com") == MailPresets.All.Length - 1, "unknown mail host falls back to manual");
         foreach (MailPreset preset in MailPresets.All) Assert(preset.host == "" || Rules.IsHost(preset.host), "preset smtp host is valid");
-        File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "self-test-result.txt"), "PASS: " + count + " checks; exact comments, pinned author changes, two-scan removal, failures, deduplication, member baseline/new-prefix/backfill/public exclusion, URL validation, persistence, DPAPI, music paths, mail presets, state lookups, config export/import without secrets", new UTF8Encoding(false));
+        var fewLog = new List<Notice> { new Notice(), new Notice() };
+        Assert(NoticeLog.Trim(fewLog) == 0 && fewLog.Count == 2, "short notice log untouched");
+        var longLog = new List<Notice>();
+        for (int i = 0; i < 620; i++) longLog.Add(new Notice { at = i.ToString(), wantsEmail = true, sent = i < 600 });
+        Assert(NoticeLog.Trim(longLog) == 120 && longLog.Count == NoticeLog.Keep, "notice log trimmed to newest five hundred");
+        Assert(longLog[0].at == "120" && NoticeLog.KeepPending(longLog).Count == 20, "trim drops oldest sent notices and keeps pending mail");
+        int before = longLog.Count; NoticeLog.KeepPending(longLog); Assert(longLog.Count == before, "clear preview leaves the log alone");
+        var floodLog = new List<Notice>();
+        for (int i = 0; i < 1100; i++) floodLog.Add(new Notice { wantsEmail = true });
+        Assert(NoticeLog.Trim(floodLog) == 100 && floodLog.Count == NoticeLog.HardCap, "pending flood still hard capped");
+        File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "self-test-result.txt"), "PASS: " + count + " checks; exact comments, pinned author changes, two-scan removal, failures, deduplication, member baseline/new-prefix/backfill/public exclusion, URL validation, persistence, DPAPI, music paths, mail presets, state lookups, notice log trimming and clearing, config export/import without secrets", new UTF8Encoding(false));
     }
 }

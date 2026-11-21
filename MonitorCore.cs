@@ -48,6 +48,21 @@ public class Notice {
     public bool wantsEmail; public bool sent; public bool popup; public bool music;
 }
 public class MailResult { public string id; public bool ok; }
+public static class NoticeLog {
+    public const int Keep = 500;
+    public const int HardCap = 1000;
+    static bool Pending(Notice notice) { return notice.wantsEmail && !notice.sent; }
+    // 记录只增不减迟早把 notices.json 撑大；先删最旧的“已发完/不发邮件”的，待发邮件尽量保住。
+    public static int Trim(List<Notice> notices) {
+        if (notices == null || notices.Count <= Keep) return 0;
+        int removed = 0;
+        List<Notice> settled = notices.FindAll(delegate(Notice n) { return !Pending(n); });
+        for (int i = 0; i < settled.Count && notices.Count > Keep; i++) { notices.Remove(settled[i]); removed++; }
+        while (notices.Count > HardCap) { notices.RemoveAt(0); removed++; }
+        return removed;
+    }
+    public static List<Notice> KeepPending(List<Notice> notices) { return notices == null ? new List<Notice>() : notices.FindAll(Pending); }
+}
 public class NotifyProfile {
     public string musicPath = ""; public int volume = 70; public bool loop = true; public bool mailEnabled = true;
     public string smtpHost = "smtp.163.com"; public string mailUser = ""; public string mailTo = "";
@@ -128,7 +143,7 @@ public static class Migration {
 
 public static class App {
     // 发布时三处版本号需一致：此处、VERSION 文件、extension/manifest.json（测试会检查）。
-    public const string Version = "2.2.0";
+    public const string Version = "2.2.1";
     public const string ConfigApp = "youtube-watch-monitor";
 }
 

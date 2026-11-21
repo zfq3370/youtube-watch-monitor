@@ -127,7 +127,7 @@ public class MonitorForm : Form {
     volatile string taskResponse; int forceCheck;
     HttpListener listener; readonly ConcurrentQueue<Observation> observations = new ConcurrentQueue<Observation>();
     readonly ConcurrentQueue<MailResult> mailResults = new ConcurrentQueue<MailResult>();
-    DataGridView grid; TextBox detail, history, musicPath; Label connection, mailStatus, musicStatus, migrationStatus;
+    DataGridView grid; TextBox detail, history, musicPath; Label connection, mailStatus, musicStatus, migrationStatus, historyInfo;
     RadioButton systemSoundChoice, customMusicChoice; Button musicBrowse;
     NumericUpDown volume; CheckBox loop; NotifyIcon tray; Form alert; TextBox alertBody; Label alertTitle; int alertCount;
     readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer(); readonly System.Windows.Forms.Timer previewTimer = new System.Windows.Forms.Timer();
@@ -248,7 +248,25 @@ public class MonitorForm : Form {
         systemSoundChoice.Checked = !useCustom; customMusicChoice.Checked = useCustom;
         musicPath.Text = settings.musicPath ?? ""; ApplyMusicMode(useCustom);
     }
-    void BuildHistory(TabControl tabs) { var page = Page(tabs, "提醒记录"); history = new TextBox { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, BackColor = Color.White }; page.Controls.Add(history); }
+    void BuildHistory(TabControl tabs) {
+        var page = Page(tabs, "提醒记录");
+        history = new TextBox { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, BackColor = Color.White };
+        var bar = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true };
+        historyInfo = new Label { AutoSize = true, MaximumSize = new Size(900, 0), ForeColor = Color.FromArgb(75, 91, 111), Margin = new Padding(4, 9, 12, 6) };
+        bar.Controls.Add(historyInfo); bar.Controls.Add(Button("清空提醒记录", delegate { ClearNotices(); }));
+        page.Controls.Add(history); page.Controls.Add(bar);
+    }
+    void ClearNotices() {
+        List<Notice> kept = NoticeLog.KeepPending(notices);
+        int dropped = notices.Count - kept.Count;
+        if (dropped == 0) { historyInfo.Text = "提醒记录里没有可清空的条目（" + kept.Count + " 条都还在等邮件发出）。"; return; }
+        string warning = kept.Count > 0
+            ? "有 " + kept.Count + " 条提醒的邮件还没发出去，这些记录会保留以便重发；其余 " + dropped + " 条将被清空。确定继续吗？"
+            : "确定清空全部 " + dropped + " 条提醒记录吗？只删记录，不影响监控基准，已经提醒过的内容不会重新提醒。";
+        if (MessageBox.Show(this, warning, "确认清空提醒记录", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
+        notices = kept; Store.Save("notices.json", notices); RefreshHistory();
+        historyInfo.Text = kept.Count > 0 ? "已清空 " + dropped + " 条，保留 " + kept.Count + " 条邮件待发送的记录，发出后可以再清一次。" : "已清空 " + dropped + " 条提醒记录。";
+    }
     void BuildConnection(TabControl tabs) {
         var panel = Stack(Page(tabs, "连接与邮箱"));
         connection = Label("等待新版浏览器助手报告。旧助手升级后需在 Chrome 扩展管理页面点一次“重新加载”。"); panel.Controls.Add(connection);
@@ -343,7 +361,10 @@ public class MonitorForm : Form {
         detail.Text = "任务：" + task.name + "\r\n链接：" + task.url + "\r\n通知：" + (task.popup ? "弹窗 " : "") + (task.email ? "邮件 " : "") + (task.music ? "音乐" : "") +
             (task.mode == "pinned" ? "\r\n评论作者：" + (task.author == "" ? "任意作者" : task.author) : task.mode == "comment" ? "\r\n评论编号：" + task.commentId : "\r\n累计已记录会员视频：" + state.seenVideos.Count) + "\r\n最近检查：" + state.checkedAt + "\r\n状态：" + state.status + (state.comment == null ? "" : "\r\n\r\n最近成功读取的评论：\r\n" + state.comment.text);
     }
-    void RefreshHistory() { history.Text = notices.Count == 0 ? "尚未发现变化。历史视频、点赞数及重复报告不会重复提醒。" : String.Join("\r\n\r\n────────────\r\n\r\n", notices.AsEnumerable().Reverse().Take(100).Select(n => n.at + "  " + n.taskName + "  " + n.kind + (n.wantsEmail ? n.sent ? " [邮件已发送]" : " [邮件待发送]" : " [不发邮件]") + "\r\n" + n.body)); }
+    void RefreshHistory() {
+        historyInfo.Text = "共 " + notices.Count + " 条记录，界面显示最近 " + Math.Min(100, notices.Count) + " 条；超过 " + NoticeLog.Keep + " 条会自动删掉最旧的已发出记录，还没发出邮件的条目优先保留。";
+        history.Text = notices.Count == 0 ? "尚未发现变化。历史视频、点赞数及重复报告不会重复提醒。" : String.Join("\r\n\r\n────────────\r\n\r\n", notices.AsEnumerable().Reverse().Take(100).Select(n => n.at + "  " + n.taskName + "  " + n.kind + (n.wantsEmail ? n.sent ? " [邮件已发送]" : " [邮件待发送]" : " [不发邮件]") + "\r\n" + n.body));
+    }
     string Recipient() { return String.IsNullOrEmpty(settings.mailTo) ? settings.mailUser : settings.mailTo; }
     bool MailReady() { return settings.mailEnabled && !String.IsNullOrEmpty(settings.password) && Rules.IsEmail(settings.mailUser) && Rules.IsEmail(Recipient()); }
     void UpdateMailLabel() {
@@ -383,7 +404,7 @@ public class MonitorForm : Form {
         while (observations.TryDequeue(out o)) {
             WatchTask task = tasks.Find(t => t.id == o.taskId && t.enabled && t.revision == o.revision); if (task == null) continue;
             TaskState state = states.Ensure(task.id);
-            var fresh = Engine.Observe(task, state, o); notices.AddRange(fresh); changed = true;
+            var fresh = Engine.Observe(task, state, o); notices.AddRange(fresh); NoticeLog.Trim(notices); changed = true;
             connection.Text = "助手已连接。最近收到任务报告：" + task.name + "，" + state.checkedAt;
             foreach (Notice notice in fresh) {
                 if (notice.popup) ShowAlert(notice.kind, notice.body, notice.url, notice.music);
